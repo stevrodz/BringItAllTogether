@@ -54,4 +54,24 @@ router.put('/:id', authenticate, async (req, res) => {
 
     res.json(updatedUser);
   } catch (error) {
-    cons
+    console.error(error);
+    res.status(500).json({ error: "Failed to update user" });
+  }
+});
+
+// Delete a user (protected)
+router.delete('/:id', authenticate, async (req, res) => {
+  try {
+    if (req.user.id === req.params.id) {
+      return res.status(403).json({ error: "You cannot delete yourself" });
+    }
+
+    await prisma.user.delete({ where: { id: req.params.id } });
+    res.json({ message: "User deleted successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to delete user" });
+  }
+});
+
+module.exports = router;
