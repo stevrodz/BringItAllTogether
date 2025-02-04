@@ -6,8 +6,52 @@ const router = express.Router();
 
 // Get all users (protected)
 router.get('/', authenticate, async (req, res) => {
-  const users = await prisma.user.findMany();
-  res.json(users);
+  try {
+    const users = await prisma.user.findMany({
+      select: { id: true, firstName: true, lastName: true, email: true },
+    });
+    res.json(users);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
-module.exports = router;
+// Get a single user by ID (protected)
+router.get('/:id', authenticate, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, firstName: true, lastName: true, email: true },
+    });
+
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    res.json(user);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Update a user (protected)
+router.put('/:id', authenticate, async (req, res) => {
+  const { firstName, lastName, email, password } = req.body;
+
+  try {
+    let updatedData = { firstName, lastName, email };
+    
+    if (password) {
+      const bcrypt = require('bcrypt');
+      updatedData.password = await bcrypt.hash(password, 10);
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: req.params.id },
+      data: updatedData,
+      select: { id: true, firstName: true, lastName: true, email: true },
+    });
+
+    res.json(updatedUser);
+  } catch (error) {
+    cons
